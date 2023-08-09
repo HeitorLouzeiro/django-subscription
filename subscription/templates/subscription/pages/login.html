@@ -1,0 +1,116 @@
+{% load static%}
+<!DOCTYPE html>
+<html lang="en">
+    <head> 
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<!-- Website CSS style -->
+        <!-- Bootstrap CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+        <!-- Website Font style -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+        <link rel="stylesheet" href="{% static 'assets/custom/css/style.css' %}">
+
+        <!-- Google Fonts -->
+        <link href='https://fonts.googleapis.com/css?family=Passion+One' rel='stylesheet' type='text/css'>
+        <link href='https://fonts.googleapis.com/css?family=Oxygen' rel='stylesheet' type='text/css'>
+
+		<title>Subscription Based</title>
+	</head>
+	<body>
+		<div class="container">
+			<div class="row main">
+				<div class="main-login main-center">
+				<h5>Sign up once and watch any of our videos.</h5>
+					<form class="" id="signup">
+						<div id="output" class="text-center text-primary font-weight-medium alert"></div>
+
+						<div class="form-group">
+							<label for="email" class="cols-sm-2 control-label">Your Email</label>
+							<div class="cols-sm-10">
+								<div class="input-group">
+									<span class="input-group-addon"><i class="fa fa-envelope fa" aria-hidden="true"></i></span>
+									<input type="text" class="form-control" id="email"  placeholder="Enter your Email" autocomplete="off" />
+								</div>
+							</div>
+							<div id="emailMessage"></div>
+						</div>
+
+						<div class="form-group">
+							<label for="password" class="cols-sm-2 control-label">Password</label>
+							<div class="cols-sm-10">
+								<div class="input-group">
+									<span class="input-group-addon"><i class="fa fa-lock fa-lg" aria-hidden="true"></i></span>
+									<input type="password" class="form-control" id="password"  placeholder="Enter your Password"/>
+								</div>
+							</div>
+						</div>
+
+						<div class="form-group ">
+							<button type="submit" id="submit" class="btn btn-primary btn-lg btn-block login-button">Login</button>
+						</div>
+						
+					</form>
+				</div>
+			</div>
+		</div>
+
+        <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script type="text/javascript" src="{% static 'assets/custom/js/passwordChecker.js' %}"></script>
+    <script type="text/javascript">
+        // Get Form and Sumbit
+        $('#signup').on('submit', function(e){
+
+            e.preventDefault();
+
+            $.ajax({
+                type : "POST",
+                url: "{% url 'login' %}", /* django ajax posting url  */
+                data: {
+                    email : $('#email').val(),
+                    password : $('#password').val(),
+                    csrfmiddlewaretoken: '{{ csrf_token }}',
+                    dataType: "json",
+
+                },
+                
+                success: function(data){
+                    console.log(data);
+                    if (data.error){
+                        $('#signup').find('.alert').removeClass('alert-success');
+                        $('#signup').find('.alert').removeClass('none');
+                        $('#signup').find('.alert').addClass('alert-warning');
+                        $('#output').html(data.error) /* response message */
+                    }
+                    else{
+                        $('#signup').find('.alert').removeClass('alert-warning');
+                        $('#signup').find('.alert').removeClass('none');
+                        $('#signup').find('.alert').addClass('alert-success');
+                        $('#output').html(data.success) /* response message */
+                        window.setTimeout(function(){
+                            $('#signup').find('input[type=text], textarea').val('');
+                        }, 700);
+                        setTimeout(redirect, 2000);
+                        function redirect(){
+                        window.location.href = "{% url 'home' %}";
+                        }
+                    }
+                    
+                },
+
+                failure: function() {
+            //       console.log(typeof(data.msg));
+                    // $('.alert').html(data.msg+"hello")
+                    
+                }
+
+
+        });
+        });
+    </script>
+	</body>
+</html>
