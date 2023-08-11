@@ -1,0 +1,22 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    {% include 'partial/head.html' %}
+    <title>
+      {% block title %}
+      {% endblock %}
+    </title>
+  </head>
+  <body>
+    {% block content %}
+
+    {% endblock %}
+  </body>
+  <footer>
+    {% include 'partial/footer.html' %}
+    {% block script %}
+
+    {% endblock %}
+  </footer>
+</html>

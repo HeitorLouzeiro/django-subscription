@@ -1,4 +1,5 @@
 from django.contrib import auth
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 from django.http import JsonResponse
@@ -12,6 +13,7 @@ from .serializers import RegisterSerializer
 
 
 # Create your views here.
+@login_required(login_url='login', redirect_field_name='next')
 def home(request):
     return render(request, 'subscription/pages/home.html')
 
@@ -33,6 +35,9 @@ def check_mail_ajax(request):
 
 
 class Register(APIView):
+    def get(self, request):
+        return render(request, 'subscription/pages/register.html')
+
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
@@ -55,11 +60,11 @@ class Login(APIView):
 
         # Let us check if the user exists or not...
         check_email = User.objects.filter(email=email).exists()
-        if check_email is False:
+        if not check_email:
             return Response({'error': 'No account with such email'})
         # We need to check if the user password is correct
         user = User.objects.get(email=email)
-        if user.check_password(password) is False:
+        if not user.check_password(password):
             return Response({'error': 'Password is not correct. Try again'})
         # Now let us log the user in
         log_user = auth.authenticate(email=email, password=password)
