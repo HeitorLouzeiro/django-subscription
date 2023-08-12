@@ -1,1 +1,11 @@
-<h1>home</h1>
+{% extends 'base.html' %}
+{% block title %}Home{% endblock title %}
+{% block content %}
+<div class="container">
+    <p>Hi Am here... I have a subscription plan.</p>
+    <p class="alert btn-success">
+        {{ subscription.user_membership.membership }} Plan
+    </p>
+    <a href="{% url 'logout' %}" class="btn btn-success">Logout</a>
+</div>
+{% endblock content %}
