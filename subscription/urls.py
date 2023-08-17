@@ -9,6 +9,7 @@ urlpatterns = [
     path('login/', views.Login.as_view(), name='login'),
     path('logout/', views.logout, name='logout'),
     path('subcription/', views.subscription, name='subscription'),
+    path('callback/', views.callback, name='callback'),
     path('subscribe/', views.subscribe, name='subscribe'),
     path('end-subscription/', views.endSubscription, name='endSubscription'),
 ]

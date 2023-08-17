@@ -1,4 +1,6 @@
-import datetime
+import calendar
+from datetime import date
+from datetime import datetime
 from datetime import datetime as dt
 from datetime import timedelta
 
@@ -10,7 +12,7 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 
-today = datetime.date.today()
+today = date.today()
 
 # Custom User Model Used Here
 
@@ -124,7 +126,7 @@ class Membership(models.Model):
         choices=MEMBERSHIP_CHOICES, default='Free', max_length=30)
     duration = models.PositiveIntegerField(default=7)
     duration_period = models.CharField(
-        max_length=100, default='Day', choices=PERIOD_DURATION)
+        max_length=100, default='Days', choices=PERIOD_DURATION)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def __str__(self):
@@ -145,13 +147,48 @@ class UserMembership(models.Model):
 
 
 @receiver(post_save, sender=UserMembership)
+@receiver(post_save, sender=UserMembership)
 def create_subscription(sender, instance, *args, **kwargs):
-    if instance:
-        Subscription.objects.create(user_membership=instance, expires_in=dt.now(
-        ).date() + timedelta(days=instance.membership.duration))
+    # Definir a função add_months aqui
+    def add_months(sourcedate, months):
+        month = sourcedate.month - 1 + months
+        year = sourcedate.year + month // 12
+        month = month % 12 + 1
+        day = min(sourcedate.day, calendar.monthrange(year, month)[1])
+        return datetime(year, month, day).date()  # Converta para objeto date
 
+    try:
+        subscription = Subscription.objects.get(user_membership=instance)
+
+        if instance.membership.duration_period == 'Months':
+            # Calculate new expiration date taking into account months
+            new_expiration_date = add_months(
+                datetime.now().date(), instance.membership.duration)
+        else:
+            # Calculate new expiration date for other duration periods (Days, Weeks)
+            new_expiration_date = datetime.now().date(
+            ) + timedelta(days=instance.membership.duration)
+
+        subscription.expires_in = new_expiration_date
+        subscription.save()
+    except Subscription.DoesNotExist:
+        if instance.membership.duration_period == 'Months':
+            new_expiration_date = add_months(
+                datetime.now().date(), instance.membership.duration)
+        else:
+            new_expiration_date = datetime.now().date(
+            ) + timedelta(days=instance.membership.duration)
+
+        Subscription.objects.create(
+            user_membership=instance, expires_in=new_expiration_date)
+    except Subscription.MultipleObjectsReturned:
+        # Handle the case where multiple subscriptions exist for the same UserMembership
+        # You might want to implement a more sophisticated logic here
+        pass
 
 # User Subscription
+
+
 class Subscription(models.Model):
     user_membership = models.ForeignKey(
         UserMembership, related_name='subscription', on_delete=models.CASCADE, default=None)

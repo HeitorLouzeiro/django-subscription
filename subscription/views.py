@@ -1,11 +1,17 @@
+from datetime import datetime as dt
+from datetime import timedelta
+
 from django.contrib import auth
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.crypto import get_random_string
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -53,7 +59,10 @@ def check_mail_ajax(request):
 
 class Register(APIView):
     def get(self, request):
-        return render(request, 'subscription/pages/register.html')
+        if request.user.is_authenticated:
+            return redirect('home')
+        else:
+            return render(request, 'subscription/pages/register.html')
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -80,7 +89,10 @@ class Register(APIView):
 
 class Login(APIView):
     def get(self, request):
-        return render(request, 'subscription/pages/login.html')
+        if request.user.is_authenticated:
+            return redirect('home')
+        else:
+            return render(request, 'subscription/pages/login.html')
 
     def post(self, request):
         email = request.data.get('email')
@@ -108,13 +120,60 @@ def logout(request):
     return redirect('login')
 
 
+@login_required(login_url='login', redirect_field_name='next')
 def subscription(request):
-    return render(request, 'subscription/pages/subscription.html')
+    # All plans other than Free
+    subscriptions = Membership.objects.filter(~Q(membership_type='Free'))
+    context = {'subscriptions': subscriptions}
+    return render(request, 'subscription/pages/subscription.html', context)
 
 
+@login_required(login_url='login', redirect_field_name='next')
 def subscribe(request):
-    return render(request, 'subscription/pages/subscribe.html')
+    plan = request.GET.get('sub_plan')
+    fecth_membership = Membership.objects.filter(membership_type=plan).exists()
+    if not fecth_membership:
+        return redirect('subscription')
+
+    payment_for = Membership.objects.get(membership_type=plan)
+    user_membership = UserMembership.objects.get(user=request.user)
+
+    paystack_charge_id = get_random_string(50)
+    paystack_access_code = get_random_string(50)
+    amount = payment_for.price
+
+    payhistory = PayHistory.objects.create(
+        user=request.user, payment_for=payment_for,
+        paystack_charge_id=paystack_charge_id,
+        paystack_access_code=paystack_access_code, amount=amount, paid=True)
+
+    payhistory.save()
+    callback_url = reverse('callback')
+    return redirect(callback_url + f'?paystack_charge_id={payhistory.paystack_charge_id}')
 
 
+@login_required(login_url='login', redirect_field_name='next')
+def callback(request):
+    paystack_charge_id = request.GET.get('paystack_charge_id')
+
+    # Retrieve the PayHistory instance or return a 404 response
+    payhistory = get_object_or_404(
+        PayHistory, paystack_charge_id=paystack_charge_id)
+
+    # Retrieve the Membership instance associated with the PayHistory
+    membership_instance = payhistory.payment_for
+
+    # Retrieve the UserMembership instance for the current user
+    subscribeplan = UserMembership.objects.get(user=request.user)
+
+    # Update the membership attribute of the UserMembership instance
+
+    subscribeplan.membership = membership_instance
+    subscribeplan.save()
+
+    return redirect('home')
+
+
+@login_required(login_url='login', redirect_field_name='next')
 def endSubscription(request):
     return render(request, 'subscription/pages/end-subscription.html')

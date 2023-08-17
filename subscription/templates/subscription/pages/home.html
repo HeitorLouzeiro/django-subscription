@@ -2,10 +2,19 @@
 {% block title %}Home{% endblock title %}
 {% block content %}
 <div class="container">
-    <p>Hi Am here... I have a subscription plan.</p>
-    <p class="alert btn-success">
-        {{ subscription.user_membership.membership }} Plan
-    </p>
+    <div class="row mb-3 mt-3">
+
+        <p>Hi Am here {{subscription.user_membership.user}} I have a subscription plan.</p>
+        <p>Expires in{{subscription.expires_in|date:"d/m/y"}}</p>
+
+        <a href="{% url 'subscription' %}">
+
+            <div class="card border-primary mb-3" style="max-width: 18rem;">
+                <div class="card-body text-primary">
+                    <h5 class="card-title">Click to update plan</h5>
+            </div>
+        </a>
+    </div>
     <a href="{% url 'logout' %}" class="btn btn-success">Logout</a>
 </div>
 {% endblock content %}
