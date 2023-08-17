@@ -5,7 +5,7 @@
     <div class="row mb-3 mt-3">
 
         <p>Hi Am here {{subscription.user_membership.user}} I have a subscription plan.</p>
-        <p>Expires in{{subscription.expires_in|date:"d/m/y"}}</p>
+        <p>Expires in {{subscription.expires_in|date:"d/m/y"}}</p>
 
         <a href="{% url 'subscription' %}">
 
