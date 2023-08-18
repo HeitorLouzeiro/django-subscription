@@ -35,7 +35,7 @@ class UserManager(BaseUserManager):
         user.save()
         return user
 
-    def create_superuser(self, email, password, **extra_fields):
+    def create_superuser(self, email, password=None, **extra_fields):
         """
         Create and save a SuperUser with the given email and password.
         """
@@ -47,7 +47,16 @@ class UserManager(BaseUserManager):
             raise ValueError(_('Superuser must have is_staff=True.'))
         if extra_fields.get('is_superuser') is not True:
             raise ValueError(_('Superuser must have is_superuser=True.'))
-        return self.create_user(email, password, **extra_fields)
+
+        # Create the superuser using the parent class's method
+        user = self.create_user(email, password, **extra_fields)
+
+        # Create UserMembership for the superuser
+        membership = Membership.objects.get(
+            membership_type='Free')  # Change this as needed
+        UserMembership.objects.create(user=user, membership=membership)
+
+        return user
 
 
 # This is User Profile
@@ -147,7 +156,6 @@ class UserMembership(models.Model):
 
 
 @receiver(post_save, sender=UserMembership)
-@receiver(post_save, sender=UserMembership)
 def create_subscription(sender, instance, *args, **kwargs):
     # Definir a função add_months aqui
     def add_months(sourcedate, months):
@@ -155,17 +163,20 @@ def create_subscription(sender, instance, *args, **kwargs):
         year = sourcedate.year + month // 12
         month = month % 12 + 1
         day = min(sourcedate.day, calendar.monthrange(year, month)[1])
-        return datetime(year, month, day).date()  # Converta para objeto date
+        # Convert to date object (Converta para objeto date)
+        return datetime(year, month, day).date()
 
     try:
         subscription = Subscription.objects.get(user_membership=instance)
 
         if instance.membership.duration_period == 'Months':
             # Calculate new expiration date taking into account months
+            # (Calcule a nova data de validade levando em consideração os meses)
             new_expiration_date = add_months(
                 datetime.now().date(), instance.membership.duration)
         else:
             # Calculate new expiration date for other duration periods (Days, Weeks)
+            # Calcular nova data de vencimento para outros períodos de duração (dias, semanas)
             new_expiration_date = datetime.now().date(
             ) + timedelta(days=instance.membership.duration)
 
@@ -181,10 +192,6 @@ def create_subscription(sender, instance, *args, **kwargs):
 
         Subscription.objects.create(
             user_membership=instance, expires_in=new_expiration_date)
-    except Subscription.MultipleObjectsReturned:
-        # Handle the case where multiple subscriptions exist for the same UserMembership
-        # You might want to implement a more sophisticated logic here
-        pass
 
 # User Subscription
 
