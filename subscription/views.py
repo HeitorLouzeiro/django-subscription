@@ -104,7 +104,6 @@ class Login(APIView):
             return Response({'error': 'No account with such email'})
 
         # Use the authenticate function to check email and password
-        print(email, password)
         log_user = authenticate(request, email=email, password=password)
         if log_user is not None:
             # Authenticate successful, log the user in
@@ -123,7 +122,7 @@ def logout(request):
 @login_required(login_url='login', redirect_field_name='next')
 def subscription(request):
     # All plans other than Free
-    subscriptions = Membership.objects.filter(~Q(membership_type='Free'))
+    subscriptions = Membership.objects.all()
     context = {'subscriptions': subscriptions}
     return render(request, 'subscription/pages/subscription.html', context)
 
@@ -136,7 +135,6 @@ def subscribe(request):
         return redirect('subscription')
 
     payment_for = Membership.objects.get(membership_type=plan)
-    user_membership = UserMembership.objects.get(user=request.user)
 
     paystack_charge_id = get_random_string(50)
     paystack_access_code = get_random_string(50)
@@ -176,4 +174,14 @@ def callback(request):
 
 @login_required(login_url='login', redirect_field_name='next')
 def endSubscription(request):
+    if request.method == 'GET':
+        if request.user.is_authenticated:
+            user_membership = UserMembership.objects.get(user=request.user)
+
+            subscriptions_exist = Subscription.objects.filter(
+                user_membership=user_membership).exists()
+
+            if subscriptions_exist:
+                return redirect('home')
+
     return render(request, 'subscription/pages/end-subscription.html')
