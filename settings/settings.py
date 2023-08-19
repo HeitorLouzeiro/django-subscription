@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'subscription',
     'rest_framework',
+    'django_cron',
 ]
 
 MIDDLEWARE = [
@@ -137,3 +138,8 @@ VERIFY_EXPIRE_DAYS = 3
 
 # Configure Django App for Heroku.
 django_on_heroku.settings(locals())
+
+CRON_CLASSES = [
+    # é o nome da classe da tarefa cron que você deseja executar.
+    'subscription.cron.DailySubscriptionCleanup',
+]

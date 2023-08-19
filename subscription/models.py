@@ -206,8 +206,8 @@ class Subscription(models.Model):
         return self.user_membership.user.username
 
 
-@receiver(post_save, sender=Subscription)
-def update_active(sender, instance, *args, **kwargs):
-    if instance.expires_in < today:
-        subscription = Subscription.objects.get(id=instance.id)
-        subscription.delete()
+# @receiver(post_save, sender=Subscription)
+# def update_active(sender, instance, *args, **kwargs):
+#     if instance.expires_in < today:
+#         subscription = Subscription.objects.get(id=instance.id)
+#         subscription.delete()
